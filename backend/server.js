@@ -15,7 +15,7 @@ app.use(express.json());
 const db = mysql.createPool({
   host: 'localhost',
   user: 'jules',
-  password: 'jules',
+  password: 'Wiqa0781',
   database: 'cryptoinfo',
 });
 
@@ -29,14 +29,20 @@ db.getConnection((err, connection) => {
   }
 });
 
-// Exemple de route simple
+// Route d'accueil
 app.get('/', (req, res) => {
   res.send('Bienvenue sur l\'API Crypto !');
 });
 
-// Récupération des cryptos
+// 🔄 Route : liste des cryptos avec leur quantité
 app.get('/cryptos', (req, res) => {
-  db.query('SELECT * FROM crypto_monnaie', (err, results) => {
+  const sql = `
+    SELECT cm.id, cm.nom, cm.tag, v.quantite, v.prix
+    FROM crypto_monnaie cm
+    JOIN valeur v ON cm.id = v.crypto_id
+  `;
+  
+  db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
