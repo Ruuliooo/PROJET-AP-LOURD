@@ -3,7 +3,7 @@ class Crypto {
   final String nom;
   final String tag;
   final double quantite;
-  final int prix; // en dollars
+  final int prix;
 
   Crypto({
     required this.id,
@@ -19,7 +19,7 @@ class Crypto {
       nom: json['nom'],
       tag: json['tag'],
       quantite: double.parse(json['quantite'].toString()),
-      prix: json['prix'], // pas besoin de parse si c'est un int
+      prix: int.parse(json['prix'].toString()), // ✅ protège le cas où c'est un string
     );
   }
 }
