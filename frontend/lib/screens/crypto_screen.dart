@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../models/crypto.dart';
+import '../services/session.dart'; // 👈 Import pour gérer la session
 
 class CryptoScreen extends StatefulWidget {
   const CryptoScreen({super.key});
@@ -13,7 +14,7 @@ class CryptoScreen extends StatefulWidget {
 
 class _CryptoScreenState extends State<CryptoScreen> {
   late Future<List<Crypto>> _cryptoList;
-  List<Crypto> _allCryptos = []; // ✅ on garde la liste complète
+  List<Crypto> _allCryptos = [];
   List<Crypto> _filteredCryptos = [];
   final TextEditingController _searchController = TextEditingController();
 
@@ -46,19 +47,108 @@ class _CryptoScreenState extends State<CryptoScreen> {
     }
   }
 
+  Future<void> _deleteCrypto(int id) async {
+    final url = Uri.parse('http://localhost:3000/cryptos/$id');
+    final response = await http.delete(url);
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Cryptomonnaie supprimée.")),
+      );
+      setState(() {
+        _cryptoList = fetchCryptos(); // Refresh
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Erreur lors de la suppression.")),
+      );
+    }
+  }
+
+  void _showEditDialog(BuildContext context, Crypto crypto) {
+    final TextEditingController nameCtrl =
+        TextEditingController(text: crypto.nom);
+    final TextEditingController tagCtrl =
+        TextEditingController(text: crypto.tag);
+    final TextEditingController quantiteCtrl =
+        TextEditingController(text: crypto.quantite.toString());
+    final TextEditingController prixCtrl =
+        TextEditingController(text: crypto.prix.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Modifier la cryptomonnaie"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Nom')),
+              TextField(
+                  controller: tagCtrl,
+                  decoration: const InputDecoration(labelText: 'Tag')),
+              TextField(
+                  controller: quantiteCtrl,
+                  decoration: const InputDecoration(labelText: 'Quantité')),
+              TextField(
+                  controller: prixCtrl,
+                  decoration: const InputDecoration(labelText: 'Prix')),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Annuler"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final updated = {
+                  'nom': nameCtrl.text,
+                  'tag': tagCtrl.text,
+                  'quantite': double.tryParse(quantiteCtrl.text) ?? 0.0,
+                  'prix': double.tryParse(prixCtrl.text) ?? 0.0,
+                };
+
+                final response = await http.put(
+                  Uri.parse('http://localhost:3000/cryptos/${crypto.id}'),
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode(updated),
+                );
+
+                if (response.statusCode == 200) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Modification réussie")),
+                  );
+                  setState(() {
+                    _cryptoList = fetchCryptos();
+                  });
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Erreur de modification")),
+                  );
+                }
+              },
+              child: const Text("Enregistrer"),
+            )
+          ],
+        );
+      },
+    );
+  }
+
   void _filterCryptos() {
     final query = _searchController.text.toLowerCase();
-
     setState(() {
-      if (query.isEmpty) {
-        _filteredCryptos = _allCryptos;
-      } else {
-        _filteredCryptos = _allCryptos
-            .where((crypto) =>
-                crypto.nom.toLowerCase().contains(query) ||
-                crypto.tag.toLowerCase().contains(query))
-            .toList();
-      }
+      _filteredCryptos = query.isEmpty
+          ? _allCryptos
+          : _allCryptos
+              .where((crypto) =>
+                  crypto.nom.toLowerCase().contains(query) ||
+                  crypto.tag.toLowerCase().contains(query))
+              .toList();
     });
   }
 
@@ -142,6 +232,35 @@ class _CryptoScreenState extends State<CryptoScreen> {
                                   color: Colors.greenAccent,
                                   fontWeight: FontWeight.w600),
                             ),
+                            const SizedBox(height: 8),
+
+                            // ✅ Affiche les boutons uniquement si connecté + admin
+                            if (Session.isLoggedIn() && Session.currentUser!.isAdmin)
+                              Row(
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      _showEditDialog(context, crypto);
+                                    },
+                                    icon: const Icon(Icons.edit, size: 16),
+                                    label: const Text('Modifier'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      _deleteCrypto(crypto.id);
+                                    },
+                                    icon: const Icon(Icons.delete, size: 16),
+                                    label: const Text('Supprimer'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),

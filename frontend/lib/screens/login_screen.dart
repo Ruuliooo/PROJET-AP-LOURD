@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../models/utilisateur.dart';
+import '../services/session.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,10 +18,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   Future<void> login() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final email = emailController.text;
     final password = passwordController.text;
 
-    final url = Uri.parse('http://localhost:3000/login'); // adapte si Android = 10.0.2.2
+    final url = Uri.parse('http://localhost:3000/login'); // Android ? utiliser 10.0.2.2
 
     try {
       final response = await http.post(
@@ -31,16 +35,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final isAdmin = data['utilisateur']['admin'] == 1;
+        final utilisateur = Utilisateur.fromJson(data['utilisateur']);
+        Session.login(utilisateur); // Sauvegarde dans la session
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isAdmin
-                ? 'Bienvenue, Admin !'
-                : 'Connexion réussie, utilisateur.'),
-          ),
+          SnackBar(content: Text('Bienvenue ${utilisateur.email}')),
         );
 
-        // Tu peux rediriger vers une page différente ici si tu veux
+        Navigator.pop(context); // Retour à l’écran précédent
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(data['error'] ?? 'Erreur de connexion')),
@@ -80,7 +82,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   labelText: 'Mot de passe',
                   suffixIcon: IconButton(
                     icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
                     onPressed: () {
                       setState(() {
                         _obscurePassword = !_obscurePassword;
@@ -88,6 +91,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Mot de passe requis';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 20),
               ElevatedButton(
