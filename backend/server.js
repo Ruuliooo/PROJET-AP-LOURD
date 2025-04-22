@@ -83,7 +83,6 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// 🔓 ROUTE : Connexion
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
 
@@ -101,10 +100,18 @@ app.post('/login', (req, res) => {
         return res.status(401).json({ error: 'Mot de passe incorrect' });
       }
 
-      res.json({ message: 'Connexion réussie', utilisateur: { id: utilisateur.id, email: utilisateur.email } });
+      res.json({
+        message: 'Connexion réussie',
+        utilisateur: {
+          id: utilisateur.id,
+          email: utilisateur.email,
+          admin: utilisateur.admin
+        }
+      });
     }
   );
 });
+
 
 // ▶ LANCEMENT DU SERVEUR
 app.listen(PORT, () => {

@@ -14,6 +14,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  bool _obscurePassword = true;
+
   bool validatePassword(String value) {
     final hasSpecialChar = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
     return value.length >= 12 && hasSpecialChar;
@@ -24,7 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final email = emailController.text;
       final password = passwordController.text;
 
-      final url = Uri.parse('http://localhost:3000/register');
+      final url = Uri.parse('http://localhost:3000/register'); // ← adapte si besoin
       try {
         final response = await http.post(
           url,
@@ -37,7 +39,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(data['message'])),
           );
-          // Rediriger ou clear les champs si tu veux
+
+          // ✅ Effacer les champs
+          emailController.clear();
+          passwordController.clear();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(data['error'] ?? 'Erreur inconnue')),
@@ -73,8 +78,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               TextFormField(
                 controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Mot de passe'),
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: 'Mot de passe',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
                 validator: (value) {
                   if (value == null || !validatePassword(value)) {
                     return 'Min. 12 caractères + 1 caractère spécial';
