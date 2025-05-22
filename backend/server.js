@@ -90,6 +90,20 @@ app.delete('/cryptos/:id', (req, res) => {
   });
 });
 
+app.get('/transactions', (req, res) => {
+  const sql = `
+    SELECT t.*, u.email
+    FROM transactions t
+    JOIN utilisateur u ON t.utilisateur_id = u.id
+    ORDER BY t.date_operation DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
 // 🔐 Inscription
 app.post('/register', async (req, res) => {
   const { email, password } = req.body;
