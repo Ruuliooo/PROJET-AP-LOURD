@@ -33,42 +33,84 @@ class _TransacScreenState extends State<TransacScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Historique des Transactions')),
+      backgroundColor: const Color.fromARGB(255, 36, 36, 36),
+      appBar: AppBar(
+        title: const Text('Historique des Transactions'),
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      ),
       body: FutureBuilder<List<TransactionModel>>(
         future: _transactions,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: Colors.white));
           } else if (snapshot.hasError) {
-            return Center(child: Text('Erreur : ${snapshot.error}'));
+            return Center(
+              child: Text('Erreur : ${snapshot.error}',
+                  style: const TextStyle(color: Colors.white)),
+            );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Aucune transaction trouvée.'));
+            return const Center(
+              child: Text('Aucune transaction trouvée.',
+                  style: TextStyle(color: Colors.white)),
+            );
           }
 
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columns: const [
-                DataColumn(label: Text('ID')),
-                DataColumn(label: Text('Email')),
-                DataColumn(label: Text('Crypto ID')),
-                DataColumn(label: Text('Quantité')),
-                DataColumn(label: Text('Type')),
-                DataColumn(label: Text('Prix')),
-                DataColumn(label: Text('Date')),
-              ],
-              rows: snapshot.data!.map((transac) {
-                return DataRow(cells: [
-                  DataCell(Text(transac.id.toString())),
-                  DataCell(Text(transac.email)),
-                  DataCell(Text(transac.cryptoId.toString())),
-                  DataCell(Text(transac.quantite.toStringAsFixed(4))),
-                  DataCell(Text(transac.typeOperation)),
-                  DataCell(Text('${transac.prixUnitaire.toStringAsFixed(2)} \$')),
-                  DataCell(Text(transac.dateOperation)),
-                ]);
-              }).toList(),
-            ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              final transac = snapshot.data![index];
+              final isAchat = transac.typeOperation.toLowerCase() == 'achat';
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Transaction ID: ${transac.id}',
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Email : ${transac.email}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      'Crypto ID : ${transac.cryptoId}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      'Quantité : ${transac.quantite.toStringAsFixed(4)}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      'Type : ${transac.typeOperation}',
+                      style: TextStyle(
+                        color: isAchat ? Colors.greenAccent : Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Prix unitaire : ${transac.prixUnitaire.toStringAsFixed(2)} \$',
+                      style: const TextStyle(color: Colors.orangeAccent),
+                    ),
+                    Text(
+                      'Date : ${transac.dateOperation}',
+                      style: const TextStyle(color: Colors.white60),
+                    ),
+                  ],
+                ),
+              );
+            },
           );
         },
       ),

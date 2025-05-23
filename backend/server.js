@@ -30,12 +30,12 @@ db.getConnection((err, connection) => {
   }
 });
 
-// 🔹 ROUTE D'ACCUEIL
+// ROUTE D'ACCUEIL
 app.get('/', (req, res) => {
   res.send('Bienvenue sur l\'API Crypto !');
 });
 
-// 🔄 ROUTE : Liste des cryptos
+// ROUTE : Liste des cryptos
 app.get('/cryptos', (req, res) => {
   const sql = `
     SELECT cm.id, cm.nom, cm.tag, v.quantite, v.prix
@@ -48,19 +48,15 @@ app.get('/cryptos', (req, res) => {
   });
 });
 
-// 🔄 🔧 MODIFIER une cryptomonnaie (crypto_monnaie + valeur)
+// MODIFIER une cryptomonnaie (crypto_monnaie + valeur)
 app.put('/cryptos/:id', (req, res) => {
   const { id } = req.params;
   const { nom, tag, quantite, prix } = req.body;
-
-  // 1. Mettre à jour crypto_monnaie
   db.query(
     'UPDATE crypto_monnaie SET nom = ?, tag = ? WHERE id = ?',
     [nom, tag, id],
     (err) => {
       if (err) return res.status(500).json({ error: 'Erreur modification crypto_monnaie', details: err });
-
-      // 2. Mettre à jour valeur liée
       db.query(
         'UPDATE valeur SET quantite = ?, prix = ? WHERE crypto_id = ?',
         [quantite, prix, id],
@@ -74,11 +70,9 @@ app.put('/cryptos/:id', (req, res) => {
   );
 });
 
-// ❌ Supprimer une cryptomonnaie
+// Supprimer une cryptomonnaie
 app.delete('/cryptos/:id', (req, res) => {
   const { id } = req.params;
-
-  // Supprimer d'abord la ligne dans `valeur` pour respecter la contrainte étrangère
   db.query('DELETE FROM valeur WHERE crypto_id = ?', [id], (err) => {
     if (err) return res.status(500).json({ error: 'Erreur suppression valeur', details: err });
 
@@ -97,14 +91,13 @@ app.get('/transactions', (req, res) => {
     JOIN utilisateur u ON t.utilisateur_id = u.id
     ORDER BY t.date_operation DESC
   `;
-
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
 
-// 🔐 Inscription
+// Inscription
 app.post('/register', async (req, res) => {
   const { email, password } = req.body;
 
@@ -138,7 +131,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// 🔓 Connexion
+// Connexion
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
 
@@ -168,7 +161,7 @@ app.post('/login', (req, res) => {
   );
 });
 
-// ▶ LANCEMENT DU SERVEUR
+// LANCEMENT DU SERVEUR
 app.listen(PORT, () => {
   console.log(`🚀 Serveur en écoute sur http://localhost:${PORT}`);
 });
